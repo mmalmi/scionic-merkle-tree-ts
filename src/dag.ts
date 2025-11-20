@@ -30,14 +30,43 @@ export async function createDag(
     throw new ScionicError('Input must be a file or directory');
   }
 
-  // Add timestamp if requested
-  if (timestampRoot) {
-    rootLeaf.AdditionalData = rootLeaf.AdditionalData || {};
-    rootLeaf.AdditionalData['timestamp'] = new Date().toISOString();
+  // Calculate statistics for root
+  const leafCount = Object.keys(leaves).length + 1; // +1 for root itself
+  let contentSize = 0;
+  let dagSize = 0;
 
-    // Recompute root hash with timestamp
-    rootLeaf = await recomputeRootLeaf(rootLeaf, leaves);
+  for (const leaf of Object.values(leaves)) {
+    if (leaf.Content) {
+      dagSize += leaf.Content.length;
+    }
+    if (leaf.Type === LeafType.File || leaf.Type === LeafType.Chunk) {
+      if (leaf.Content) {
+        contentSize += leaf.Content.length;
+      }
+    }
   }
+
+  // Add timestamp if requested
+  const additionalData = rootLeaf.AdditionalData || {};
+  if (timestampRoot) {
+    additionalData['timestamp'] = new Date().toISOString();
+  }
+
+  // Rebuild root with statistics
+  const builder = new DagLeafBuilder(rootLeaf.ItemName).setType(rootLeaf.Type);
+
+  if (rootLeaf.Links) {
+    for (const link of rootLeaf.Links) {
+      builder.addLink(link);
+    }
+  }
+
+  rootLeaf = await builder.buildRootLeaf(
+    Object.keys(additionalData).length > 0 ? additionalData : undefined,
+    leafCount,
+    contentSize,
+    dagSize
+  );
 
   // Build final DAG
   const dag: Dag = {
