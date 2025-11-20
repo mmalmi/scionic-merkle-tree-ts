@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scionic Merkle Tree - Browser Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 { color: #4ec9b0; }
+        h2 { color: #569cd6; }
+        .test { margin: 10px 0; padding: 10px; background: #252526; border-radius: 4px; }
+        .pass { color: #4ec9b0; }
+        .fail { color: #f48771; }
+        .info { color: #ce9178; }
+        pre { background: #1e1e1e; padding: 10px; overflow-x: auto; border-left: 3px solid #569cd6; }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        button:hover { background: #1177bb; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🌐 Scionic Merkle Tree - Browser Tests</h1>
+    <p>Testing browser-compatible Merkle DAG implementation</p>
+
+    <div>
+        <button onclick="runAllTests()">▶ Run All Tests</button>
+        <button onclick="document.getElementById('results').innerHTML = ''">Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module">
+        import * as ScionicMerkleTree from './dist/browser/scionic-merkle-tree.es.js';
+
+        window.ScionicMerkleTree = ScionicMerkleTree;
+
+        window.log = (msg, type = 'info') => {
+            const div = document.createElement('div');
+            div.className = 'test ' + type;
+            div.innerHTML = msg;
+            document.getElementById('results').appendChild(div);
+        };
+
+        window.runAllTests = async () => {
+            document.getElementById('results').innerHTML = '';
+            log('<h2>Running Browser Tests...</h2>');
+
+            let passed = 0;
+            let failed = 0;
+
+            try {
+                // Test 1: Create DAG from small file
+                log('<b>Test 1:</b> Create DAG from small file');
+                const content1 = new TextEncoder().encode('Hello from browser!');
+                const dag1 = await ScionicMerkleTree.createDagFromFile('test.txt', content1);
+
+                if (dag1.Root && dag1.Root.startsWith('bafi')) {
+                    log(`✓ DAG created: ${dag1.Root}`, 'pass');
+                    log(`  Leaves: ${Object.keys(dag1.Leafs).length}`, 'info');
+                    passed++;
+                } else {
+                    log('✗ Invalid root CID', 'fail');
+                    failed++;
+                }
+
+                // Test 2: Verify DAG
+                log('<b>Test 2:</b> Verify DAG integrity');
+                await ScionicMerkleTree.verifyDag(dag1);
+                log('✓ DAG verification passed', 'pass');
+                passed++;
+
+                // Test 3: Reconstruct file
+                log('<b>Test 3:</b> Reconstruct file from DAG');
+                const reconstructed = ScionicMerkleTree.reconstructFile(dag1);
+                const text = new TextDecoder().decode(reconstructed);
+
+                if (text === 'Hello from browser!') {
+                    log('✓ File reconstructed correctly', 'pass');
+                    passed++;
+                } else {
+                    log(`✗ Reconstruction failed: got "${text}"`, 'fail');
+                    failed++;
+                }
+
+                // Test 4: Large file with chunking
+                log('<b>Test 4:</b> Large file with chunking');
+                const CHUNK_SIZE = 2 * 1024 * 1024;
+                const largeContent = new Uint8Array(CHUNK_SIZE + 500);
+                for (let i = 0; i < largeContent.length; i++) {
+                    largeContent[i] = i % 256;
+                }
+
+                const dag2 = await ScionicMerkleTree.createDagFromFile('large.bin', largeContent);
+                const chunks = Object.values(dag2.Leafs).filter(leaf => leaf.Type === 'chunk');
+
+                if (chunks.length > 0) {
+                    log(`✓ Chunking works: ${chunks.length} chunks created`, 'pass');
+                    passed++;
+                } else {
+                    log('✗ No chunks created', 'fail');
+                    failed++;
+                }
+
+                // Test 5: Merkle tree
+                log('<b>Test 5:</b> Browser Merkle tree');
+                const leaves = [
+                    await ScionicMerkleTree.hashData(new TextEncoder().encode('a')),
+                    await ScionicMerkleTree.hashData(new TextEncoder().encode('b')),
+                    await ScionicMerkleTree.hashData(new TextEncoder().encode('c'))
+                ];
+
+                const tree = new ScionicMerkleTree.BrowserMerkleTree(leaves);
+                await tree.build();
+                const root = tree.getRoot();
+
+                // Verify proofs
+                let allValid = true;
+                for (let i = 0; i < leaves.length; i++) {
+                    const proof = tree.getProof(i);
+                    const valid = await ScionicMerkleTree.BrowserMerkleTree.verify(leaves[i], proof, root);
+                    if (!valid) allValid = false;
+                }
+
+                if (allValid) {
+                    log('✓ Merkle tree proofs verified', 'pass');
+                    passed++;
+                } else {
+                    log('✗ Merkle proof verification failed', 'fail');
+                    failed++;
+                }
+
+                // Test 6: CID determinism
+                log('<b>Test 6:</b> CID determinism');
+                const content6 = new TextEncoder().encode('deterministic');
+                const dag6a = await ScionicMerkleTree.createDagFromFile('det.txt', content6);
+                const dag6b = await ScionicMerkleTree.createDagFromFile('det.txt', content6);
+
+                if (dag6a.Root === dag6b.Root) {
+                    log(`✓ Deterministic CIDs: ${dag6a.Root}`, 'pass');
+                    passed++;
+                } else {
+                    log('✗ Non-deterministic CIDs', 'fail');
+                    failed++;
+                }
+
+                // Test 7: Serialization
+                log('<b>Test 7:</b> CBOR serialization');
+                const cbor = ScionicMerkleTree.toCBOR(dag1);
+                const restored = ScionicMerkleTree.fromCBOR(cbor);
+
+                if (restored.Root === dag1.Root) {
+                    log(`✓ CBOR round-trip successful (${cbor.length} bytes)`, 'pass');
+                    passed++;
+                } else {
+                    log('✗ CBOR round-trip failed', 'fail');
+                    failed++;
+                }
+
+                // Test 8: Blob input
+                log('<b>Test 8:</b> Blob input support');
+                const blob = new Blob(['Blob test content'], { type: 'text/plain' });
+                const dag8 = await ScionicMerkleTree.createDagFromFile('blob.txt', blob);
+
+                if (dag8.Root && dag8.Root.startsWith('bafi')) {
+                    log('✓ Blob input handled correctly', 'pass');
+                    passed++;
+                } else {
+                    log('✗ Blob handling failed', 'fail');
+                    failed++;
+                }
+
+                // Summary
+                log(`<h2>Results: ${passed}/${passed + failed} tests passed</h2>`,
+                    passed === passed + failed ? 'pass' : 'fail');
+
+                if (passed === passed + failed) {
+                    log('🎉 All browser tests passed!', 'pass');
+                }
+
+            } catch (error) {
+                log(`<b>Error:</b> ${error.message}`, 'fail');
+                log(`<pre>${error.stack}</pre>`, 'fail');
+                failed++;
+            }
+        };
+
+        // Run tests automatically
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 100);
+        });
+    </script>
+</body>
+</html>

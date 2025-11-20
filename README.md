@@ -27,12 +27,29 @@ A TypeScript implementation of Scionic Merkle Trees, combining the strengths of 
 
 ## Installation
 
+### Node.js
 ```bash
 npm install scionic-merkle-tree-ts
 ```
 
+### Browser (ESM)
+```html
+<script type="module">
+  import * as ScionicMerkleTree from './dist/browser/scionic-merkle-tree.es.js';
+</script>
+```
+
+### Browser (UMD)
+```html
+<script src="./dist/browser/scionic-merkle-tree.umd.js"></script>
+<script>
+  const { createDagFromFile, verifyDag } = ScionicMerkleTree;
+</script>
+```
+
 ## Quick Start
 
+### Node.js
 ```typescript
 import { createDag, verifyDag, createDirectory } from 'scionic-merkle-tree-ts';
 
@@ -51,6 +68,24 @@ const loaded = loadFromFile('my-dag.cbor');
 
 // Recreate the directory
 createDirectory(loaded, './output-directory');
+```
+
+### Browser
+```typescript
+import { createDagFromFile, verifyDag, reconstructFile } from 'scionic-merkle-tree-ts/browser';
+
+// Create DAG from file input
+const fileInput = document.querySelector('input[type="file"]');
+const file = fileInput.files[0];
+const content = new Uint8Array(await file.arrayBuffer());
+
+const dag = await createDagFromFile(file.name, content);
+
+// Verify
+await verifyDag(dag);
+
+// Reconstruct
+const reconstructed = reconstructFile(dag);
 ```
 
 ## API

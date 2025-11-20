@@ -5,12 +5,22 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && vite build",
+    "build:node": "tsc",
+    "build:browser": "vite build",
     "test": "jest",
+    "test:browser": "vitest run tests/browser",
+    "test:all": "npm test && npm run test:browser",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "keywords": ["merkle", "dag", "cryptography", "verification", "blockchain"],
+  "keywords": [
+    "merkle",
+    "dag",
+    "cryptography",
+    "verification",
+    "blockchain"
+  ],
   "author": "Scionic Merkle Tree Contributors",
   "license": "MIT",
   "repository": {
@@ -25,8 +35,13 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@vitest/ui": "^4.0.10",
+    "happy-dom": "^20.0.10",
     "jest": "^30.2.0",
+    "jsdom": "^27.2.0",
     "ts-jest": "^29.4.5",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "vite": "^7.2.2",
+    "vitest": "^4.0.10"
   }
 }
