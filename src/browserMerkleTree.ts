@@ -40,26 +40,39 @@ export class BrowserMerkleTree {
 
   /**
    * Build the tree from leaves
+   * Matches Go's txaty/go-merkletree algorithm by duplicating odd nodes
    */
   private async buildTree(leaves: Uint8Array[]): Promise<Uint8Array[][]> {
     if (leaves.length === 0) {
       return [];
     }
 
-    const layers: Uint8Array[][] = [leaves];
-    let currentLayer = leaves;
+    if (leaves.length === 1) {
+      // Single leaf - no tree needed
+      return [leaves];
+    }
+
+    const layers: Uint8Array[][] = [];
+    let currentLayer = [...leaves]; // Copy to avoid mutating input
+
+    // Fix odd length by duplicating the last node (matching Go's fixOddLength)
+    if (currentLayer.length % 2 === 1) {
+      currentLayer.push(currentLayer[currentLayer.length - 1]);
+    }
+
+    layers.push(currentLayer); // Store the (potentially modified) first layer
 
     while (currentLayer.length > 1) {
       const nextLayer: Uint8Array[] = [];
 
+      // Process pairs - all should be pairs now since we fix odd lengths
       for (let i = 0; i < currentLayer.length; i += 2) {
-        if (i + 1 < currentLayer.length) {
-          // Hash pair
-          nextLayer.push(await hashPair(currentLayer[i], currentLayer[i + 1]));
-        } else {
-          // Odd node, promote it without hashing
-          nextLayer.push(currentLayer[i]);
-        }
+        nextLayer.push(await hashPair(currentLayer[i], currentLayer[i + 1]));
+      }
+
+      // Fix odd length for next iteration
+      if (nextLayer.length % 2 === 1 && nextLayer.length > 1) {
+        nextLayer.push(nextLayer[nextLayer.length - 1]);
       }
 
       layers.push(nextLayer);
