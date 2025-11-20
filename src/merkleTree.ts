@@ -83,23 +83,27 @@ export class MerkleTree {
     const siblings: Uint8Array[] = [];
     let path = 0;
     let index = leafIndex;
+    let siblingCount = 0; // Track which sibling we're adding (for path bits)
 
     // Traverse from leaf to root
     for (let level = 0; level < this.layers.length - 1; level++) {
       const layer = this.layers[level];
       const isRightNode = index % 2 === 1;
 
-      // Set bit in path if sibling is on right (we're on left)
-      if (!isRightNode) {
-        path |= 1 << level;
-      }
-
       const siblingIndex = isRightNode ? index - 1 : index + 1;
 
+      // Only add sibling and set path bit if sibling exists
       if (siblingIndex < layer.length) {
         siblings.push(layer[siblingIndex]);
+
+        // Set bit in path if sibling is on right (we're on left)
+        // Path bit corresponds to sibling array index, not tree level
+        if (!isRightNode) {
+          path |= 1 << siblingCount;
+        }
+
+        siblingCount++;
       }
-      // Skip if no sibling (odd promoted node)
 
       index = Math.floor(index / 2);
     }

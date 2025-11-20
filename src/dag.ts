@@ -51,23 +51,34 @@ export async function createDag(
     }
 
     // DagSize is the size of serialized CBOR for each child leaf
-    // Must match Go's CalculateTotalDagSize structure
+    // Must match Go's CalculateTotalDagSize structure EXACTLY
+    // Go includes all fields but serializes them as they are (including nil/empty values)
+    const sortedLinks = leaf.Links ? [...leaf.Links].sort() : [];
+    const sortedAdditionalData = leaf.AdditionalData && Object.keys(leaf.AdditionalData).length > 0
+      ? Object.entries(leaf.AdditionalData).sort((a, b) => a[0].localeCompare(b[0])).reduce((acc, [k, v]) => { acc[k] = v; return acc; }, {} as Record<string, string>)
+      : {};
+
     const leafForSize = {
       Hash: leaf.Hash,
       ItemName: leaf.ItemName,
       Type: leaf.Type,
-      ContentHash: leaf.ContentHash || null,
-      Content: leaf.Content || null,
-      ClassicMerkleRoot: leaf.ClassicMerkleRoot || Buffer.alloc(0),
+      ContentHash: leaf.ContentHash ? Buffer.from(leaf.ContentHash) : null,
+      Content: leaf.Content ? Buffer.from(leaf.Content) : null,
+      ClassicMerkleRoot: leaf.ClassicMerkleRoot ? Buffer.from(leaf.ClassicMerkleRoot) : Buffer.alloc(0),
       CurrentLinkCount: leaf.CurrentLinkCount,
       LeafCount: leaf.LeafCount || 0,
       ContentSize: leaf.ContentSize || 0,
       DagSize: leaf.DagSize || 0,
-      Links: leaf.Links ? [...leaf.Links].sort() : [],
-      AdditionalData: leaf.AdditionalData ? Object.entries(leaf.AdditionalData).sort((a, b) => a[0].localeCompare(b[0])).reduce((acc, [k, v]) => { acc[k] = v; return acc; }, {} as Record<string, string>) : {},
+      Links: sortedLinks,
+      AdditionalData: sortedAdditionalData,
     };
     const cbor = require('cbor');
     const leafCbor = cbor.encode(leafForSize);
+
+    if (process.env.DEBUG_DAGSIZE) {
+      console.log(`[DAGSIZE]   Child ${leaf.ItemName}: ${leafCbor.length} bytes`);
+    }
+
     childrenDagSize += leafCbor.length;
   }
 
@@ -130,9 +141,16 @@ export async function createDag(
   const rootLeafSize = rootCbor.length;
 
   // DagSize calculation verified to match Go implementation
+  if (process.env.DEBUG_DAGSIZE) {
+    console.log(`[DAGSIZE] childrenDagSize: ${childrenDagSize}, rootLeafSize: ${rootLeafSize}`);
+  }
 
   // Final DagSize = children DAG size + root leaf CBOR size
   const dagSize = childrenDagSize + rootLeafSize;
+
+  if (process.env.DEBUG_DAGSIZE) {
+    console.log(`[DAGSIZE] Final dagSize: ${dagSize}`);
+  }
 
   // Now create final root with correct DagSize
   rootLeaf = await builder.buildRootLeaf(

@@ -81,12 +81,13 @@ export class DagLeafBuilder {
     }
 
     // Create leaf data for hashing (must match Go/Rust structure exactly)
+    // Must use Buffer for byte fields to avoid CBOR tags
     const leafData = {
       ItemName: this.itemName,
       Type: this.leafType,
-      MerkleRoot: merkleRoot || Buffer.alloc(0),  // Empty bytes, not empty array
+      MerkleRoot: merkleRoot ? Buffer.from(merkleRoot) : Buffer.alloc(0),
       CurrentLinkCount: this.links.length,
-      ContentHash: contentHash || null,  // Buffer or null, not array
+      ContentHash: contentHash ? Buffer.from(contentHash) : null,
       AdditionalData: sortMapForVerification(additionalData),
     };
 
