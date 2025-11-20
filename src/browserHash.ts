@@ -11,7 +11,7 @@ import * as cbor from 'cbor';
 export async function hashData(data: Uint8Array): Promise<Uint8Array> {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
     // Browser environment
-    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data as BufferSource);
     return new Uint8Array(hashBuffer);
   } else {
     // Node.js fallback
