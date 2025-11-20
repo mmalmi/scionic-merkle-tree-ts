@@ -30,21 +30,51 @@ export async function createDag(
     throw new ScionicError('Input must be a file or directory');
   }
 
-  // Calculate statistics for root
-  const leafCount = Object.keys(leaves).length + 1; // +1 for root itself
+  // Calculate statistics for root BEFORE removing it from leaves
+  // Include all leaves in the DAG (including root which is still in leaves at this point)
+  const leafCount = Object.keys(leaves).length;
   let contentSize = 0;
-  let dagSize = 0;
+  let childrenDagSize = 0;
 
-  for (const leaf of Object.values(leaves)) {
-    if (leaf.Content) {
-      dagSize += leaf.Content.length;
+  // Calculate content size and children DAG size
+  for (const [hash, leaf] of Object.entries(leaves)) {
+    // Skip the root itself when counting children
+    if (hash === rootLeaf.Hash) {
+      continue;
     }
+
+    // ContentSize is sum of all content in files and chunks
     if (leaf.Type === LeafType.File || leaf.Type === LeafType.Chunk) {
       if (leaf.Content) {
         contentSize += leaf.Content.length;
       }
     }
+
+    // DagSize is the size of serialized CBOR for each child leaf
+    // We need to serialize a subset of fields for size calculation
+    const leafForSize = {
+      Hash: leaf.Hash,
+      ItemName: leaf.ItemName,
+      Type: leaf.Type,
+      CurrentLinkCount: leaf.CurrentLinkCount,
+      LeafCount: leaf.LeafCount || 0,
+      ContentSize: leaf.ContentSize || 0,
+      DagSize: leaf.DagSize || 0,
+      Links: leaf.Links || [],
+      AdditionalData: leaf.AdditionalData || {},
+    };
+    const cbor = require('cbor');
+    const leafCbor = cbor.encode(leafForSize);
+    childrenDagSize += leafCbor.length;
   }
+
+  // For root file, also add its content to contentSize
+  if (rootLeaf.Type === LeafType.File && rootLeaf.Content) {
+    contentSize += rootLeaf.Content.length;
+  }
+
+  // Now remove the root from leaves - we'll rebuild it with statistics
+  delete leaves[rootLeaf.Hash];
 
   // Add timestamp if requested
   const additionalData = rootLeaf.AdditionalData || {};
@@ -52,8 +82,13 @@ export async function createDag(
     additionalData['timestamp'] = new Date().toISOString();
   }
 
-  // Rebuild root with statistics
+  // Rebuild root with statistics, preserving content
   const builder = new DagLeafBuilder(rootLeaf.ItemName).setType(rootLeaf.Type);
+
+  // Preserve the content from the original leaf
+  if (rootLeaf.Content) {
+    builder.setData(rootLeaf.Content);
+  }
 
   if (rootLeaf.Links) {
     for (const link of rootLeaf.Links) {
@@ -61,6 +96,34 @@ export async function createDag(
     }
   }
 
+  // Calculate temporary root size with DagSize=0 to get CBOR size
+  const tempRoot = await builder.buildRootLeaf(
+    Object.keys(additionalData).length > 0 ? additionalData : undefined,
+    leafCount,
+    contentSize,
+    0 // temporary DagSize
+  );
+
+  // Serialize temp root to get its size
+  const tempRootForSize = {
+    Hash: tempRoot.Hash,
+    ItemName: tempRoot.ItemName,
+    Type: tempRoot.Type,
+    CurrentLinkCount: tempRoot.CurrentLinkCount,
+    LeafCount: tempRoot.LeafCount,
+    ContentSize: tempRoot.ContentSize,
+    DagSize: 0,
+    Links: tempRoot.Links || [],
+    AdditionalData: tempRoot.AdditionalData || {},
+  };
+  const cbor = require('cbor');
+  const rootCbor = cbor.encode(tempRootForSize);
+  const rootLeafSize = rootCbor.length;
+
+  // Final DagSize = children DAG size + root leaf CBOR size
+  const dagSize = childrenDagSize + rootLeafSize;
+
+  // Now create final root with correct DagSize
   rootLeaf = await builder.buildRootLeaf(
     Object.keys(additionalData).length > 0 ? additionalData : undefined,
     leafCount,
