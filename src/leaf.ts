@@ -9,14 +9,17 @@ import { createCID } from './hash';
 
 /**
  * Sort a map for deterministic serialization
+ * Returns array of {Key, Value} objects matching Go's KeyValue struct
  */
 function sortMapForVerification(
   map: Record<string, string> | undefined
-): Array<[string, string]> {
-  if (!map) {
+): Array<{Key: string, Value: string}> {
+  if (!map || Object.keys(map).length === 0) {
     return [];
   }
-  return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  return Object.entries(map)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, v]) => ({ Key: k, Value: v }));
 }
 
 /**
@@ -81,9 +84,9 @@ export class DagLeafBuilder {
     const leafData = {
       ItemName: this.itemName,
       Type: this.leafType,
-      MerkleRoot: merkleRoot ? Array.from(merkleRoot) : [],
+      MerkleRoot: merkleRoot || Buffer.alloc(0),  // Empty bytes, not empty array
       CurrentLinkCount: this.links.length,
-      ContentHash: contentHash ? Array.from(contentHash) : null,
+      ContentHash: contentHash || null,  // Buffer or null, not array
       AdditionalData: sortMapForVerification(additionalData),
     };
 
@@ -140,19 +143,20 @@ export class DagLeafBuilder {
     leaf.DagSize = dagSize;
 
     // Recompute hash with root fields
-    const leafData = {
-      ItemName: leaf.ItemName,
-      Type: leaf.Type,
-      MerkleRoot: leaf.ClassicMerkleRoot ? Array.from(leaf.ClassicMerkleRoot) : [],
-      CurrentLinkCount: leaf.CurrentLinkCount,
-      ContentHash: leaf.ContentHash ? Array.from(leaf.ContentHash) : null,
-      AdditionalData: sortMapForVerification(additionalData),
-      LeafCount: leafCount,
-      ContentSize: contentSize,
-      DagSize: dagSize,
-    };
+  // Must match Go's final leafData structure exactly
+  const leafData = {
+    ItemName: leaf.ItemName,
+    Type: leaf.Type,
+    MerkleRoot: leaf.ClassicMerkleRoot ? Buffer.from(leaf.ClassicMerkleRoot) : Buffer.alloc(0),
+    CurrentLinkCount: leaf.CurrentLinkCount,
+    LeafCount: leafCount,
+    ContentSize: contentSize,
+    DagSize: dagSize,
+    ContentHash: leaf.ContentHash ? Buffer.from(leaf.ContentHash) : null,
+    AdditionalData: sortMapForVerification(additionalData),
+  };
 
-    leaf.Hash = await createCID(leafData);
+  leaf.Hash = await createCID(leafData);
 
     return leaf;
   }

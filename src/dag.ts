@@ -51,17 +51,20 @@ export async function createDag(
     }
 
     // DagSize is the size of serialized CBOR for each child leaf
-    // We need to serialize a subset of fields for size calculation
+    // Must match Go's CalculateTotalDagSize structure
     const leafForSize = {
       Hash: leaf.Hash,
       ItemName: leaf.ItemName,
       Type: leaf.Type,
+      ContentHash: leaf.ContentHash || null,
+      Content: leaf.Content || null,
+      ClassicMerkleRoot: leaf.ClassicMerkleRoot || Buffer.alloc(0),
       CurrentLinkCount: leaf.CurrentLinkCount,
       LeafCount: leaf.LeafCount || 0,
       ContentSize: leaf.ContentSize || 0,
       DagSize: leaf.DagSize || 0,
-      Links: leaf.Links || [],
-      AdditionalData: leaf.AdditionalData || {},
+      Links: leaf.Links ? [...leaf.Links].sort() : [],
+      AdditionalData: leaf.AdditionalData ? Object.entries(leaf.AdditionalData).sort((a, b) => a[0].localeCompare(b[0])).reduce((acc, [k, v]) => { acc[k] = v; return acc; }, {} as Record<string, string>) : {},
     };
     const cbor = require('cbor');
     const leafCbor = cbor.encode(leafForSize);
@@ -105,20 +108,28 @@ export async function createDag(
   );
 
   // Serialize temp root to get its size
+  // IMPORTANT: Must match Go's tempLeafData structure EXACTLY
+  // Field order matters for CBOR encoding!
+  const sortedAdditionalData = tempRoot.AdditionalData && Object.keys(tempRoot.AdditionalData).length > 0
+    ? Object.entries(tempRoot.AdditionalData).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => ({ Key: k, Value: v }))
+    : [];
+
   const tempRootForSize = {
-    Hash: tempRoot.Hash,
     ItemName: tempRoot.ItemName,
     Type: tempRoot.Type,
+    MerkleRoot: tempRoot.ClassicMerkleRoot ? Buffer.from(tempRoot.ClassicMerkleRoot) : Buffer.alloc(0),
     CurrentLinkCount: tempRoot.CurrentLinkCount,
     LeafCount: tempRoot.LeafCount,
     ContentSize: tempRoot.ContentSize,
     DagSize: 0,
-    Links: tempRoot.Links || [],
-    AdditionalData: tempRoot.AdditionalData || {},
+    ContentHash: tempRoot.ContentHash ? Buffer.from(tempRoot.ContentHash) : null,
+    AdditionalData: sortedAdditionalData,
   };
   const cbor = require('cbor');
   const rootCbor = cbor.encode(tempRootForSize);
   const rootLeafSize = rootCbor.length;
+
+  // DagSize calculation verified to match Go implementation
 
   // Final DagSize = children DAG size + root leaf CBOR size
   const dagSize = childrenDagSize + rootLeafSize;
