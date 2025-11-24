@@ -39,45 +39,38 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Checkout Go implementation
+      uses: actions/checkout@v4
       with:
-        path: scionic-merkle-tree-ts
+        repository: HORNET-Storage/Scionic-Merkle-Tree
+        path: ../Scionic-Merkle-Tree
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 20.x
         cache: 'npm'
-        cache-dependency-path: scionic-merkle-tree-ts/package-lock.json
 
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
 
-    - name: Checkout Go implementation
-      uses: actions/checkout@v4
-      with:
-        repository: HORNET-Storage/Scionic-Merkle-Tree
-        path: Scionic-Merkle-Tree
-
     - name: Build Go implementation
-      working-directory: Scionic-Merkle-Tree
-      run: go build -o scionic-merkle-tree ./cmd
+      run: |
+        cd ../Scionic-Merkle-Tree
+        go build -o scionic-merkle-tree ./cmd
+        cd -
 
     - name: Install TypeScript dependencies
-      working-directory: scionic-merkle-tree-ts
       run: npm ci
 
     - name: Build TypeScript
-      working-directory: scionic-merkle-tree-ts
       run: npm run build:node
 
     - name: Run full test suite (skip browser tests)
-      working-directory: scionic-merkle-tree-ts
       run: npm test -- --testPathIgnorePatterns="browser/"
-      env:
-        # Make Go binary available to tests
-        PATH: ${{ github.workspace }}/Scionic-Merkle-Tree:${{ env.PATH }}
 
   test-browser:
     name: Browser Tests
