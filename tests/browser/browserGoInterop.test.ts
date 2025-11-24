@@ -13,8 +13,12 @@ import { fromCBOR } from '../../src/serialize';
 
 const BITCOIN_PDF_PATH = path.join(__dirname, '..', '..', 'bitcoin.pdf');
 
+// Check if Go implementation is available
+const GO_IMPL_PATH = '/workspace/Scionic-Merkle-Tree';
+const GO_AVAILABLE = fs.existsSync(GO_IMPL_PATH) && fs.existsSync(path.join(GO_IMPL_PATH, 'cmd', 'test_helper.go'));
+
 describe('Browser vs Go Merkle Root Comparison', () => {
-  test('browser bitcoin.pdf matches Go root (no chunking)', async () => {
+  test.skipIf(!GO_AVAILABLE)('browser bitcoin.pdf matches Go root (no chunking)', async () => {
     // Read bitcoin.pdf
     const content = fs.readFileSync(BITCOIN_PDF_PATH);
 
@@ -35,7 +39,7 @@ describe('Browser vs Go Merkle Root Comparison', () => {
     fs.copyFileSync(BITCOIN_PDF_PATH, goPdfPath);
 
     const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go info "${goPdfPath}"`,
+      `cd ${GO_IMPL_PATH} && go run cmd/test_helper.go info "${goPdfPath}"`,
       { encoding: 'utf-8', timeout: 30000 }
     );
 
@@ -57,7 +61,7 @@ describe('Browser vs Go Merkle Root Comparison', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  test('browser small file matches Go', async () => {
+  test.skipIf(!GO_AVAILABLE)('browser small file matches Go', async () => {
     const content = new TextEncoder().encode('test content for browser');
 
     // Browser DAG
@@ -70,7 +74,7 @@ describe('Browser vs Go Merkle Root Comparison', () => {
 
     const goCborPath = path.join(tempDir, 'go.cbor');
     execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${testFile}" "${goCborPath}"`,
+      `cd ${GO_IMPL_PATH} && go run cmd/test_helper.go create "${testFile}" "${goCborPath}"`,
       { encoding: 'utf-8', timeout: 30000 }
     );
 
