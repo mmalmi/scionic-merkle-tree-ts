@@ -31,7 +31,7 @@ jobs:
       run: npm run build:node
 
     - name: Run tests (skip Go interop and browser tests)
-      run: npm test -- --testPathIgnorePatterns="goInterop|bitcoinRoundTrip|compareDirectory|chunkSizeComparison|debugHash|decodeGoLeaf|directoryDagSize|exactCborMatch|browser/"
+      run: npm test -- --testPathIgnorePatterns="goInterop|bitcoinRoundTrip|compareDirectory|chunkSizeComparison|debugHash|decodeGoLeaf|directoryDagSize|browser/"
 
   test-full:
     name: Full Tests (With Go Interop)
