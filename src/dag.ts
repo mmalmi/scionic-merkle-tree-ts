@@ -363,9 +363,7 @@ async function verifyLeaf(expectedHash: string, leaf: DagLeaf, dag: Dag): Promis
   }
 
   // Verify Classic Merkle root if present
-  // TODO: Fix Merkle tree verification to match Go/Rust implementation exactly
-  // For now, skip this verification
-  /*if (leaf.ClassicMerkleRoot && leaf.Links && leaf.Links.length > 1) {
+  if (leaf.ClassicMerkleRoot && leaf.Links && leaf.Links.length > 1) {
     // Hash each link first, then build tree from hashes
     const hashedLeaves = leaf.Links.map((link) => {
       const linkBytes = Buffer.from(link, 'utf-8');
@@ -377,7 +375,7 @@ async function verifyLeaf(expectedHash: string, leaf: DagLeaf, dag: Dag): Promis
     if (!arraysEqual(computedRoot, leaf.ClassicMerkleRoot)) {
       throw new ScionicError(`Classic Merkle root mismatch for leaf ${expectedHash}`);
     }
-  }*/
+  }
 
   // Verify content hash if present
   if (leaf.ContentHash && leaf.Content) {

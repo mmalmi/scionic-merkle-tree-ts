@@ -169,13 +169,9 @@ export async function verifyTransmissionPacket(dag: Dag, packet: TransmissionPac
     // If parent has multiple links, we need a Merkle proof
     if (parent.Links && parent.Links.length > 1) {
       if (!packet.proofs || !packet.proofs[packet.Leaf.Hash]) {
-        // TODO: Re-enable after fixing Merkle tree proof verification
-        // throw new ScionicError(`Missing Merkle proof for leaf ${packet.Leaf.Hash}`);
+        throw new ScionicError(`Missing Merkle proof for leaf ${packet.Leaf.Hash}`);
       }
 
-      // TODO: Fix Merkle proof verification to match Go/Rust implementation exactly
-      // For now, skip proof verification to allow transmission to work
-      /*
       if (parent.ClassicMerkleRoot && packet.proofs && packet.proofs[packet.Leaf.Hash]) {
         const proof = packet.proofs[packet.Leaf.Hash].Proof;
         const leafBytes = Buffer.from(packet.Leaf.Hash, 'utf-8');
@@ -186,7 +182,6 @@ export async function verifyTransmissionPacket(dag: Dag, packet: TransmissionPac
           throw new ScionicError(`Invalid Merkle proof for leaf ${packet.Leaf.Hash}`);
         }
       }
-      */
     }
   }
 }

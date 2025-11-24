@@ -58,19 +58,26 @@ export class DagLeafBuilder {
       throw new ScionicError('Leaf must have a type');
     }
 
-    // Build merkle root for links
+    // Sort links (for directories only, preserve order for files)
+    // IMPORTANT: Must sort before building Merkle root!
+    let linksForHashing = [...this.links];
+    if (this.leafType === LeafType.Directory) {
+      linksForHashing.sort();
+    }
+
+    // Build merkle root for links (using sorted links for directories)
     let merkleRoot: Uint8Array | undefined;
-    if (this.links.length > 1) {
+    if (linksForHashing.length > 1) {
       // Hash each link first, then build tree from hashes
-      const hashedLeaves = this.links.map((link) => {
+      const hashedLeaves = linksForHashing.map((link) => {
         const linkBytes = Buffer.from(link, 'utf-8');
         return new Uint8Array(createHash('sha256').update(linkBytes).digest());
       });
       const tree = new MerkleTree(hashedLeaves);
       merkleRoot = tree.getRoot();
-    } else if (this.links.length === 1) {
+    } else if (linksForHashing.length === 1) {
       // For single link, hash it directly
-      const linkBytes = Buffer.from(this.links[0], 'utf-8');
+      const linkBytes = Buffer.from(linksForHashing[0], 'utf-8');
       merkleRoot = new Uint8Array(createHash('sha256').update(linkBytes).digest());
     }
 
@@ -94,19 +101,13 @@ export class DagLeafBuilder {
     // Create CID from the leaf data
     const hash = await createCID(leafData);
 
-    // Sort links (for directories only, preserve order for files)
-    let sortedLinks = [...this.links];
-    if (this.leafType === LeafType.Directory) {
-      sortedLinks.sort();
-    }
-
-    // Build the final leaf
+    // Build the final leaf (using already-sorted links)
     const leaf: DagLeaf = {
       Hash: hash,
       ItemName: this.itemName,
       Type: this.leafType,
       CurrentLinkCount: this.links.length,
-      Links: sortedLinks.length > 0 ? sortedLinks : undefined,
+      Links: linksForHashing.length > 0 ? linksForHashing : undefined,
     };
 
     // Add optional fields
