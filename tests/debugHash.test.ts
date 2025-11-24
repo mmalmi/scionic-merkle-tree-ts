@@ -4,8 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
-import { execInGoRepo } from './testHelpers';
+import { runGoCommand } from './testHelpers';
 import { createDag } from '../src/dag';
 import { fromCBOR } from '../src/serialize';
 import { createHash } from 'crypto';
@@ -38,10 +37,7 @@ describe('Hash Calculation Debug', () => {
     fs.copyFileSync(BITCOIN_PDF, goPdfPath);
 
     const goCborPath = path.join(tempDir, 'go.cbor');
-    execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${goPdfPath}" "${goCborPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
+    runGoCommand(`go run cmd/test_helper.go create "${goPdfPath}" "${goCborPath}"`);
 
     const goDag = fromCBOR(fs.readFileSync(goCborPath));
     const goRoot = goDag.Leafs[goDag.Root];

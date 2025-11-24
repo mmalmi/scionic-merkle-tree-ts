@@ -6,8 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
-import { execInGoRepo } from './testHelpers';
+import { runGoCommand } from './testHelpers';
 import { createDag } from '../src/dag';
 import { DEFAULT_CHUNK_SIZE } from '../src/types';
 
@@ -17,17 +16,9 @@ const BITCOIN_PDF = path.join(__dirname, '..', 'bitcoin.pdf');
  * Create DAG with Go using specific chunk size
  */
 function createDagWithGoChunkSize(inputPath: string, chunkSize: number): string {
-  try {
-    // Go implementation allows setting chunk size via environment or code modification
-    // For now, we'll just use the default and compare
-    const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go info "${inputPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
-    return output;
-  } catch (error: any) {
-    throw new Error(`Go command failed: ${error.message}`);
-  }
+  // Go implementation allows setting chunk size via environment or code modification
+  // For now, we'll just use the default and compare
+  return runGoCommand(`go run cmd/test_helper.go info "${inputPath}"`);
 }
 
 describe('Chunk Size Comparison Tests', () => {

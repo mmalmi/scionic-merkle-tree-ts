@@ -6,16 +6,15 @@
 import { describe, test, expect } from 'vitest';
 import { createDagFromFile, verifyDag } from '../../src/browser';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
 import { fromCBOR } from '../../src/serialize';
+import { goImplementationAvailable, getGoRepoPath, runGoCommand } from '../testHelpers';
 
 const BITCOIN_PDF_PATH = path.join(__dirname, '..', '..', 'bitcoin.pdf');
 
 // Check if Go implementation is available
-const GO_IMPL_PATH = '/workspace/Scionic-Merkle-Tree';
-const GO_AVAILABLE = fs.existsSync(GO_IMPL_PATH) && fs.existsSync(path.join(GO_IMPL_PATH, 'cmd', 'test_helper.go'));
+const GO_AVAILABLE = goImplementationAvailable();
 
 describe('Browser vs Go Merkle Root Comparison', () => {
   test.skipIf(!GO_AVAILABLE)('browser bitcoin.pdf matches Go root (no chunking)', async () => {
@@ -38,10 +37,7 @@ describe('Browser vs Go Merkle Root Comparison', () => {
     const goPdfPath = path.join(tempDir, 'bitcoin.pdf');
     fs.copyFileSync(BITCOIN_PDF_PATH, goPdfPath);
 
-    const output = execSync(
-      `cd ${GO_IMPL_PATH} && go run cmd/test_helper.go info "${goPdfPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
+    const output = runGoCommand(`go run cmd/test_helper.go info "${goPdfPath}"`);
 
     console.log(`Go output: ${output}`);
 
@@ -73,10 +69,7 @@ describe('Browser vs Go Merkle Root Comparison', () => {
     fs.writeFileSync(testFile, content);
 
     const goCborPath = path.join(tempDir, 'go.cbor');
-    execSync(
-      `cd ${GO_IMPL_PATH} && go run cmd/test_helper.go create "${testFile}" "${goCborPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
+    runGoCommand(`go run cmd/test_helper.go create "${testFile}" "${goCborPath}"`);
 
     const goDag = fromCBOR(fs.readFileSync(goCborPath));
 

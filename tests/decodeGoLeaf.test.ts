@@ -5,8 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
-import { execInGoRepo } from './testHelpers';
+import { runGoCommand } from './testHelpers';
 import { fromCBOR } from '../src/serialize';
 
 describe('Decode Go Leaf', () => {
@@ -21,10 +20,7 @@ describe('Decode Go Leaf', () => {
 
     // Create with Go
     const goCborPath = path.join(tempDir, 'go.cbor');
-    execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${inputDir}" "${goCborPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
+    runGoCommand(`go run cmd/test_helper.go create "${inputDir}" "${goCborPath}"`);
 
     const goDag = fromCBOR(fs.readFileSync(goCborPath));
 

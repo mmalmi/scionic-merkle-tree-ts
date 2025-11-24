@@ -14,6 +14,7 @@ export function findGoRepoPath(): string | null {
   const possiblePaths = [
     '/workspace/Scionic-Merkle-Tree',
     path.join(__dirname, '..', 'Scionic-Merkle-Tree'),
+    path.join(process.cwd(), 'Scionic-Merkle-Tree'),
     path.join(process.cwd(), '..', 'Scionic-Merkle-Tree'),
   ];
 

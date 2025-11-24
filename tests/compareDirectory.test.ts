@@ -5,9 +5,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
 import { createDag } from '../src/dag';
 import { fromCBOR } from '../src/serialize';
+import { runGoCommand } from './testHelpers';
 
 describe('Directory DAG Comparison', () => {
   test('compare TS and Go directory DAGs', async () => {
@@ -37,10 +37,7 @@ describe('Directory DAG Comparison', () => {
 
     // Go DAG
     const goCborPath = path.join(tempDir, 'go.cbor');
-    execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${inputDir}" "${goCborPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
+    runGoCommand(`go run cmd/test_helper.go create "${inputDir}" "${goCborPath}"`);
 
     const goDag = fromCBOR(fs.readFileSync(goCborPath));
 

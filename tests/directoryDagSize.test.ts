@@ -5,8 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
-import { execInGoRepo } from './testHelpers';
+import { runGoCommand } from './testHelpers';
 import { createDag } from '../src/dag';
 import { fromCBOR, toCBOR } from '../src/serialize';
 
@@ -88,10 +87,7 @@ describe('Directory DAG DagSize Debug', () => {
 
     // Go DAG
     const goCborPath = path.join(tempDir, 'go.cbor');
-    const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${inputDir}" "${goCborPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
+    const output = runGoCommand(`go run cmd/test_helper.go create "${inputDir}" "${goCborPath}"`);
 
     console.log('\nGo DAG:', output.trim());
 
