@@ -6,66 +6,30 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync, spawn } from 'child_process';
 import { createDag, verifyDag } from '../src/dag';
 import { saveToFile, loadFromFile, fromCBOR } from '../src/serialize';
 import { LeafType } from '../src/types';
-
-/**
- * Check if Go implementation is available
- */
-function goImplementationAvailable(): boolean {
-  try {
-    return fs.existsSync('/workspace/Scionic-Merkle-Tree') &&
-           fs.existsSync('/workspace/Scionic-Merkle-Tree/go.mod');
-  } catch {
-    return false;
-  }
-}
+import { goImplementationAvailable, runGoCommand } from './testHelpers';
 
 /**
  * Create a DAG using the Go implementation
  */
 function createDagWithGo(inputPath: string, outputCbor: string): string {
-  try {
-    const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${inputPath}" "${outputCbor}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
-    return output;
-  } catch (error: any) {
-    throw new Error(`Go command failed: ${error.message}\nOutput: ${error.stdout || error.stderr}`);
-  }
+  return runGoCommand(`go run cmd/test_helper.go create "${inputPath}" "${outputCbor}"`);
 }
 
 /**
  * Verify a DAG using the Go implementation
  */
 function verifyDagWithGo(cborPath: string): string {
-  try {
-    const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go verify "${cborPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
-    return output;
-  } catch (error: any) {
-    throw new Error(`Go verification failed: ${error.message}\nOutput: ${error.stdout || error.stderr}`);
-  }
+  return runGoCommand(`go run cmd/test_helper.go verify "${cborPath}"`);
 }
 
 /**
  * Get DAG info using Go implementation
  */
 function getDagInfoWithGo(inputPath: string): string {
-  try {
-    const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go info "${inputPath}"`,
-      { encoding: 'utf-8', timeout: 30000 }
-    );
-    return output;
-  } catch (error: any) {
-    throw new Error(`Go info command failed: ${error.message}`);
-  }
+  return runGoCommand(`go run cmd/test_helper.go info "${inputPath}"`);
 }
 
 describe('Go Interoperability Tests', () => {

@@ -11,7 +11,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { fromCBOR } from '../../src/serialize';
 
-const BITCOIN_PDF_PATH = '/workspace/scionic-merkle-tree-ts/bitcoin.pdf';
+const BITCOIN_PDF_PATH = path.join(__dirname, '..', '..', 'bitcoin.pdf');
 
 describe('Browser vs Go Merkle Root Comparison', () => {
   test('browser bitcoin.pdf matches Go root (no chunking)', async () => {

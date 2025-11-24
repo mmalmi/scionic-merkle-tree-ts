@@ -5,11 +5,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { execInGoRepo } from './testHelpers';
 import { createDag } from '../src/dag';
 import { fromCBOR } from '../src/serialize';
 import { createHash } from 'crypto';
 
-const BITCOIN_PDF = '/workspace/scionic-merkle-tree-ts/bitcoin.pdf';
+const BITCOIN_PDF = path.join(__dirname, '..', 'bitcoin.pdf');
 
 describe('Hash Calculation Debug', () => {
   test('compare content hashes for bitcoin.pdf', async () => {

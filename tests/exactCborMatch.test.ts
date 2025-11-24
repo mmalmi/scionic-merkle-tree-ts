@@ -4,8 +4,9 @@
 
 import { createDag } from '../src/dag';
 import * as fs from 'fs';
+import * as path from 'path';
 
-const BITCOIN_PDF = '/workspace/scionic-merkle-tree-ts/bitcoin.pdf';
+const BITCOIN_PDF = path.join(__dirname, '..', 'bitcoin.pdf');
 
 describe('Exact CBOR Matching', () => {
   test('debug leaf data encoding', async () => {

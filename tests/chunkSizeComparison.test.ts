@@ -7,10 +7,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { execSync } from 'child_process';
+import { execInGoRepo } from './testHelpers';
 import { createDag } from '../src/dag';
 import { DEFAULT_CHUNK_SIZE } from '../src/types';
 
-const BITCOIN_PDF = '/workspace/scionic-merkle-tree-ts/bitcoin.pdf';
+const BITCOIN_PDF = path.join(__dirname, '..', 'bitcoin.pdf');
 
 /**
  * Create DAG with Go using specific chunk size

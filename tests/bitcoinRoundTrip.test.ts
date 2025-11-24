@@ -5,11 +5,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
 import { createDag, verifyDag } from '../src/dag';
 import { saveToFile, loadFromFile, fromCBOR } from '../src/serialize';
+import { execInGoRepo } from './testHelpers';
 
-const BITCOIN_PDF = '/workspace/scionic-merkle-tree-ts/bitcoin.pdf';
+const BITCOIN_PDF = path.join(__dirname, '..', 'bitcoin.pdf');
 
 describe('Bitcoin PDF Round-Trip Tests', () => {
   let tempDir: string;
@@ -45,10 +45,10 @@ describe('Bitcoin PDF Round-Trip Tests', () => {
 
     // Try to read with Go
     try {
-      const output = execSync(
-        `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go verify "${cborPath}"`,
+      const output = execInGoRepo(
+        `go run cmd/test_helper.go verify "${cborPath}"`,
         { encoding: 'utf-8', timeout: 30000 }
-      );
+      ) as string;
       console.log(`\nGo successfully read TypeScript CBOR:`);
       console.log(output);
       expect(output).toContain('Success');
@@ -67,10 +67,10 @@ describe('Bitcoin PDF Round-Trip Tests', () => {
 
     // Create with Go
     const goCborPath = path.join(tempDir, 'bitcoin_go.cbor');
-    const output = execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${goPdfPath}" "${goCborPath}"`,
+    const output = execInGoRepo(
+      `go run cmd/test_helper.go create "${goPdfPath}" "${goCborPath}"`,
       { encoding: 'utf-8', timeout: 30000 }
-    );
+    ) as string;
     console.log(`Go created DAG:`);
     console.log(output);
 
@@ -106,8 +106,8 @@ describe('Bitcoin PDF Round-Trip Tests', () => {
     const goPdfPath = path.join(tempDir, 'bitcoin.pdf');
     fs.copyFileSync(BITCOIN_PDF, goPdfPath);
     const goCborPath = path.join(tempDir, 'bitcoin_go.cbor');
-    execSync(
-      `cd /workspace/Scionic-Merkle-Tree && go run cmd/test_helper.go create "${goPdfPath}" "${goCborPath}"`,
+    execInGoRepo(
+      `go run cmd/test_helper.go create "${goPdfPath}" "${goCborPath}"`,
       { encoding: 'utf-8', timeout: 30000 }
     );
 
