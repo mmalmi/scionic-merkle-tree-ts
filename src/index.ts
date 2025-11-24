@@ -38,6 +38,20 @@ export {
 // Export Partial DAG support
 export { getPartial, isPartial } from './partial';
 
+// Export Diff support
+export {
+  diff,
+  diffFromNewLeaves,
+  applyDiffToDag,
+  createPartialDagFromDiff,
+  getAddedLeaves,
+  getRemovedLeaves,
+  DiffType,
+  type LeafDiff,
+  type DiffSummary,
+  type DagDiff,
+} from './diff';
+
 // Export Streaming support
 export {
   StreamingDagBuilder,
