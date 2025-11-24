@@ -4,6 +4,18 @@ A TypeScript implementation of Scionic Merkle Trees, combining the strengths of 
 
 **Full feature parity with Go and Rust implementations!** ✨
 
+## 🌐 Browser-First Design
+
+This library is **primarily designed for browser environments** where TypeScript/JavaScript is the natural choice. It provides full Scionic Merkle Tree functionality in the browser with no native dependencies.
+
+**For native/server applications**, consider using the [Rust implementation](https://github.com/HORNET-Storage/scionic-merkle-tree-rs) which offers:
+- Superior performance (5-10x faster)
+- Lower memory footprint
+- Native system integration
+- Compiled efficiency
+
+Both implementations are fully compatible and can read each other's DAGs.
+
 ## Features
 
 ### Core Features
