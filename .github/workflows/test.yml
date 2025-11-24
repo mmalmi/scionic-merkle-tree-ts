@@ -30,8 +30,8 @@ jobs:
     - name: Build
       run: npm run build:node
 
-    - name: Run tests (skip Go interop)
-      run: npm test -- --testPathIgnorePatterns="goInterop|bitcoinRoundTrip|compareDirectory|chunkSizeComparison|debugHash|decodeGoLeaf|directoryDagSize"
+    - name: Run tests (skip Go interop and browser tests)
+      run: npm test -- --testPathIgnorePatterns="goInterop|bitcoinRoundTrip|compareDirectory|chunkSizeComparison|debugHash|decodeGoLeaf|directoryDagSize|exactCborMatch|browser/"
 
   test-full:
     name: Full Tests (With Go Interop)
@@ -72,9 +72,9 @@ jobs:
       working-directory: scionic-merkle-tree-ts
       run: npm run build:node
 
-    - name: Run full test suite
+    - name: Run full test suite (skip browser tests)
       working-directory: scionic-merkle-tree-ts
-      run: npm test
+      run: npm test -- --testPathIgnorePatterns="browser/"
       env:
         # Make Go binary available to tests
         PATH: ${{ github.workspace }}/Scionic-Merkle-Tree:${{ env.PATH }}
