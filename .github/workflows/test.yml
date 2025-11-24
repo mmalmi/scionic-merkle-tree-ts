@@ -1,0 +1,80 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test-basic:
+    name: Basic Tests (No Go Interop)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build:node
+
+    - name: Run tests (skip Go interop)
+      run: npm test -- --testPathIgnorePatterns="goInterop|bitcoinRoundTrip|compareDirectory|chunkSizeComparison|debugHash|decodeGoLeaf|directoryDagSize"
+
+  test-full:
+    name: Full Tests (With Go Interop)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: scionic-merkle-tree-ts
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        cache-dependency-path: scionic-merkle-tree-ts/package-lock.json
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Checkout Go implementation
+      uses: actions/checkout@v4
+      with:
+        repository: HORNET-Storage/Scionic-Merkle-Tree
+        path: Scionic-Merkle-Tree
+
+    - name: Build Go implementation
+      working-directory: Scionic-Merkle-Tree
+      run: go build -o scionic-merkle-tree ./cmd
+
+    - name: Install TypeScript dependencies
+      working-directory: scionic-merkle-tree-ts
+      run: npm ci
+
+    - name: Build TypeScript
+      working-directory: scionic-merkle-tree-ts
+      run: npm run build:node
+
+    - name: Run full test suite
+      working-directory: scionic-merkle-tree-ts
+      run: npm test
+      env:
+        # Make Go binary available to tests
+        PATH: ${{ github.workspace }}/Scionic-Merkle-Tree:${{ env.PATH }}
