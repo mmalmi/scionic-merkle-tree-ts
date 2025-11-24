@@ -38,5 +38,12 @@ export {
 // Export Partial DAG support
 export { getPartial, isPartial } from './partial';
 
+// Export Streaming support
+export {
+  StreamingDagBuilder,
+  createDagFromStream,
+  createDagFromBuffer,
+} from './streaming';
+
 // Version
 export const VERSION = '0.1.0';
